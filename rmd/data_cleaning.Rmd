@@ -1,0 +1,217 @@
+---
+title: "Personality"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(stringr))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(data.table))
+```
+
+```{r Read_data}
+raw_data <- read.csv("Relationship between blood group and personality.csv")
+head(raw_data)
+```
+
+```{r CLean_up}
+# Missing data count for each column
+na_count <-sapply(raw_data, function(y) sum(length(which(is.na(y)))))
+(na_count <- data.frame(na_count))
+
+#Converting all factor columns to class character
+raw_data <- raw_data %>% group_by_if(is.factor, as.character)
+
+# We do not need the Timestamp for analysis, we can drop the column as it is the timestamp of when the individual has taken the survey. Dropping it .
+raw_data<- subset(raw_data, select = - c(Timestamp)) 
+
+#Sane column names
+new_names <- c("Origin","Reside","Age","Gender","BldGrp","InRel","BldGrp_Prtnr",
+               "help_Ppl","Enyj_Grp","Chs_Wrds_Care", "Take_Chrg","Get_Nervs_Talkng","Like_Ordr",
+               "Get_Upset","Modest_Achieve","Adventure","Enjy_attentn","Variety_Routine",
+               "Feel_Emo","Hard_Trust_Ppl","Avoid_Arguing","Avoid_alone","Detail_Orntd",
+               "Focus_on_present","Go_With_Flow","Talk_abt_Own_Feelngs","Fun_Party_Aftr_Wrk",
+               "Rarely_Insecure")
+
+### Reference table of column names ###
+(Col_names<-data.frame(stringsAsFactors=FALSE,old_names = c(colnames(raw_data)),new_names))
+#Col_names <- Col_names %>% group_by_if(is.factor, as.character)
+
+### Updating col. names ###
+setnames(raw_data, Col_names$old_names, Col_names$new_names)
+colnames(raw_data)
+
+#Formatting strings
+raw_data$Origin<-str_to_title(raw_data$Origin)   # Example : INDIA to become India
+raw_data$Origin<-trimws(raw_data$Origin)         # Trimming leading/trailing spaces
+
+raw_data$Reside<-str_to_title(raw_data$Reside)   # Example : INDIA to become India
+raw_data$Reside<-trimws(raw_data$Reside)         # Trimming leading/trailing spaces
+
+# Filter out "A+" as Origin
+raw_data<- raw_data%>% filter(raw_data$Origin != "A+" & raw_data$Origin !="Cã"Te Dâ???TIvoire Ðÿ???¨Ðÿ???®")
+raw_data<- raw_data%>% filter(raw_data$Reside !="Ðÿ???ºðÿ???¸")
+
+
+#Getting the unique values from columns 
+#(unique(raw_data$Origin))  
+#(unique(raw_data$Reside))
+#(unique(raw_data$Age))
+
+```
+
+```{r}
+#Spell check
+(corrected <- data.frame(stringsAsFactors=FALSE,
+     Wrong_spell = c("Ivory Coast", 
+                     "Cã´Te Dâ???TIvoire", 
+                     "Ivoiry Coast", 
+                     "Cã´Te D' Ivoire",    
+                     "Cã´Tã© D'ivoire",
+                     "Cote Dâ???TIvoire", 
+                     "Cote D Ivoire", 
+                     "Cã´Tã© Dâ???TIvoire",
+                     "Niger",
+                     "Usa",
+                     "Cã"Te Dâ???TIvoire Ðÿ???¨Ðÿ???®",
+                     "Drc","Cote D'ivoire",
+                     "Cã´Te D Ivoire",
+                     "Cã´Te D ivoire",
+                     "Cã´Tã© D Ivoire",
+                     "Cã´Te Divoire",
+                     "Dr Congo",
+                     "United States",
+                     "Sã©Nã©Gal",
+                     "Cã´Te D'ivoire",
+                     "Cã"Te Dâ???TIvoire Ðÿ???¨Ðÿ???®",
+                     "Nigeri",
+                     "Nigerian",
+                     "The Democratic Republic Of Congo",
+                     "United States Of America",
+                     "Cã´Te Dâ???TIvoire",
+                     "Afrique",
+                     "Us",
+                     "United State",
+                     "U.s",
+                     "Uae",
+                     "Cite D D'ivoire",
+                     "United State USA Ðÿ???ºðÿ???¸",
+                     "African",
+                     "United Kingdom",
+                     "Uk",
+                     "Ðÿ???ºðÿ???¸",
+                     "Unites States",
+                     "USA Of America",
+                     "USA USA Ðÿ???ºðÿ???¸",
+                     "Hong Kong Sar",
+                     "America"
+                    ),
+     Correct_spell = c("Côte d'Ivoire", 
+                       "Côte d'Ivoire", 
+                       "Côte d'Ivoire", 
+                       "Côte d'Ivoire", 
+                       "Côte d'Ivoire",
+                       "Côte d'Ivoire", 
+                       "Côte d'Ivoire",
+                       "Côte d'Ivoire",
+                       "Nigeria",
+                       "USA",
+                       "Côte d'Ivoire",
+                       "Congo","Côte d'Ivoire",
+                       "Côte d'Ivoire",
+                       "Côte d'Ivoire",
+                       "Côte d'Ivoire",
+                       "Côte d'Ivoire",
+                       "Congo",
+                       "USA",
+                       "Senegal",
+                       "Côte d'Ivoire",
+                       "Côte d'Ivoire",
+                       "Nigeria",
+                       "Nigeria",
+                       "Congo",
+                       "USA",
+                       "Côte d'Ivoire",
+                       "Africa",
+                       "USA",
+                       "USA",
+                       "UAE",
+                       "Côte d'Ivoire",
+                       "USA",
+                       "Africa",
+                       "USA",
+                       "UK",
+                       "UK",
+                       "Unknown",
+                       "USA",
+                       "USA",
+                       "USA",
+                       "Hong Kong",
+                       "USA"
+                       )
+))
+
+
+regex_pattern <- setNames(corrected$Correct_spell, paste0("\\b",corrected$Wrong_spell,"\\b"))
+raw_data$Origin<-str_replace_all((raw_data$Origin), regex_pattern)
+raw_data$Reside<-str_replace_all((raw_data$Reside), regex_pattern)
+
+# Age handling
+raw_data$Age<- ifelse(raw_data$Age %in% c("31 years old",
+                                           "26 ans ",
+                                           "29 ans",
+                                           "Almost 22",
+                                           "18-45",
+                                           "23 years old",
+                                           "34+",
+                                           "27 years old ",
+                                           "30 Years"),
+                                         c("31","26","29","22","20","23","34","27","30"),
+                                          raw_data$Age)
+#raw_data$Age<-str_replace_all((raw_data$Age), regex_pattern)
+
+#Checking the unique values from columns 
+(unique(raw_data$Origin))
+(unique(raw_data$Reside))
+(unique(raw_data$Age))
+
+#Age column to numeric
+raw_data$Age <- as.numeric(raw_data$Age)
+head(raw_data)
+
+#Chechking if any column has any NAs after update
+na_count <-sapply(raw_data, function(y) sum(length(which(is.na(y)))))
+(na_count <- data.frame(na_count))
+```
+
+```{r}
+#Age group creation
+AgeGroup <- cut(raw_data$Age, 
+                right=FALSE, 
+                breaks = c(0,1,(1:9)*10,1000),
+                labels = c("0","1-9",
+                           paste((1:8)*10,"-",(1:8 + 1)*10 -1),"90+"))
+
+
+raw_data<-mutate(raw_data,AgeGroup=AgeGroup)
+
+head(raw_data)
+```
+
+
+
+```{r write file}
+#View(raw_data)
+#Write file
+write.csv(raw_data,"Relationship_bloodGrp_cleaned.csv", row.names = FALSE)
+
+```
+
+
+
+
