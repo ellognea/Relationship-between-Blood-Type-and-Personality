@@ -15,7 +15,7 @@ suppressPackageStartupMessages(library(data.table))
 ```
 
 ```{r Read_data}
-raw_data <- read.csv("Relationship between blood group and personality.csv")
+raw_data <- read_csv("../data/Relationship between blood group and personality.csv")
 head(raw_data)
 ```
 
@@ -54,14 +54,14 @@ raw_data$Reside<-str_to_title(raw_data$Reside)   # Example : INDIA to become Ind
 raw_data$Reside<-trimws(raw_data$Reside)         # Trimming leading/trailing spaces
 
 # Filter out "A+" as Origin
-raw_data<- raw_data%>% filter(raw_data$Origin != "A+" & raw_data$Origin !="Cã"Te Dâ???TIvoire Ðÿ???¨Ðÿ???®")
-raw_data<- raw_data%>% filter(raw_data$Reside !="Ðÿ???ºðÿ???¸")
+raw_data<- raw_data%>% filter(raw_data$Origin != "A+" & raw_data$Origin !="Côte D'ivoire \U0001f1e8\U0001f1ee")
+raw_data<- raw_data%>% filter(raw_data$Reside != "\U0001f1fa\U0001f1f8" & raw_data$Reside !="United State Usa \U0001f1fa\U0001f1f8")
 
 
 #Getting the unique values from columns 
-#(unique(raw_data$Origin))  
-#(unique(raw_data$Reside))
-#(unique(raw_data$Age))
+(unique(raw_data$Origin))  
+(unique(raw_data$Reside))
+(unique(raw_data$Age))
 
 ```
 
@@ -69,79 +69,86 @@ raw_data<- raw_data%>% filter(raw_data$Reside !="Ðÿ???ºðÿ???¸")
 #Spell check
 (corrected <- data.frame(stringsAsFactors=FALSE,
      Wrong_spell = c("Ivory Coast", 
-                     "Cã´Te Dâ???TIvoire", 
+                     "Côte D'ivoire", 
                      "Ivoiry Coast", 
-                     "Cã´Te D' Ivoire",    
-                     "Cã´Tã© D'ivoire",
-                     "Cote Dâ???TIvoire", 
+                     "Côte D' Ivoire",    
+                     "Côté D'ivoire",
+                     "Cote D'ivoire", 
                      "Cote D Ivoire", 
-                     "Cã´Tã© Dâ???TIvoire",
+                     "Côté D'ivoire",
                      "Niger",
                      "Usa",
-                     "Cã"Te Dâ???TIvoire Ðÿ???¨Ðÿ???®",
-                     "Drc","Cote D'ivoire",
-                     "Cã´Te D Ivoire",
-                     "Cã´Te D ivoire",
-                     "Cã´Tã© D Ivoire",
-                     "Cã´Te Divoire",
+                     "Côte D'ivoire \U0001f1e8\U0001f1ee",
+                     "Drc",
+                     "Cote D'ivoire",
+                     "Côte D Ivoire",
+                     "Côte D'ivoire",
+                     "Côté D Ivoire",
+                     "Côte Divoire",
                      "Dr Congo",
                      "United States",
-                     "Sã©Nã©Gal",
-                     "Cã´Te D'ivoire",
-                     "Cã"Te Dâ???TIvoire Ðÿ???¨Ðÿ???®",
+                     "Sénégal",
+                     "Côte D'ivoire",
+                     "Côte D'ivoire",
                      "Nigeri",
                      "Nigerian",
                      "The Democratic Republic Of Congo",
                      "United States Of America",
-                     "Cã´Te Dâ???TIvoire",
+                     "Cote D'ivoire",
                      "Afrique",
                      "Us",
                      "United State",
                      "U.s",
                      "Uae",
                      "Cite D D'ivoire",
-                     "United State USA Ðÿ???ºðÿ???¸",
+                     "United State Usa \U0001f1fa\U0001f1f8",
                      "African",
                      "United Kingdom",
                      "Uk",
-                     "Ðÿ???ºðÿ???¸",
+                     "\U0001f1fa\U0001f1f8",
                      "Unites States",
                      "USA Of America",
-                     "USA USA Ðÿ???ºðÿ???¸",
+                     "USA USA \U0001f1fa\U0001f1f8",
                      "Hong Kong Sar",
-                     "America"
+                     "America",
+                     "Cameroun",
+                     "Dallas",
+                     "England",
+                     "Lagos",
+                     "Yes"
                     ),
-     Correct_spell = c("Côte d'Ivoire", 
-                       "Côte d'Ivoire", 
-                       "Côte d'Ivoire", 
-                       "Côte d'Ivoire", 
-                       "Côte d'Ivoire",
-                       "Côte d'Ivoire", 
-                       "Côte d'Ivoire",
-                       "Côte d'Ivoire",
+     Correct_spell = c("Ivory Coast", 
+                       "Ivory Coast", 
+                       "Ivory Coast", 
+                       "Ivory Coast", 
+                       "Ivory Coast",
+                       "Ivory Coast", 
+                       "Ivory Coast",
+                       "Ivory Coast",
                        "Nigeria",
                        "USA",
-                       "Côte d'Ivoire",
-                       "Congo","Côte d'Ivoire",
-                       "Côte d'Ivoire",
-                       "Côte d'Ivoire",
-                       "Côte d'Ivoire",
-                       "Côte d'Ivoire",
+                       "Ivory Coast",
+                       "Congo",
+                       "Ivory Coast",
+                       "Ivory Coast",
+                       "Ivory Coast",
+                       "Ivory Coast",
+                       "Ivory Coast",
                        "Congo",
                        "USA",
                        "Senegal",
-                       "Côte d'Ivoire",
-                       "Côte d'Ivoire",
+                       "Ivory Coast",
+                       "Ivory Coast",
                        "Nigeria",
                        "Nigeria",
                        "Congo",
                        "USA",
-                       "Côte d'Ivoire",
+                       "Ivory Coast",
                        "Africa",
                        "USA",
                        "USA",
                        "UAE",
-                       "Côte d'Ivoire",
+                       "Ivory Coast",
                        "USA",
                        "Africa",
                        "USA",
@@ -152,25 +159,33 @@ raw_data<- raw_data%>% filter(raw_data$Reside !="Ðÿ???ºðÿ???¸")
                        "USA",
                        "USA",
                        "Hong Kong",
-                       "USA"
+                       "USA",
+                       "Cameroon",
+                       "USA",
+                       "UK",
+                       "Nigeria",
+                       "Ivory Coast"
                        )
 ))
 
 
-regex_pattern <- setNames(corrected$Correct_spell, paste0("\\b",corrected$Wrong_spell,"\\b"))
+(regex_pattern <- setNames(corrected$Correct_spell, paste0("\\b",corrected$Wrong_spell,"\\b")))
 raw_data$Origin<-str_replace_all((raw_data$Origin), regex_pattern)
 raw_data$Reside<-str_replace_all((raw_data$Reside), regex_pattern)
 
+
+
 # Age handling
 raw_data$Age<- ifelse(raw_data$Age %in% c("31 years old",
-                                           "26 ans ",
+                                           "26 ans",
                                            "29 ans",
                                            "Almost 22",
                                            "18-45",
                                            "23 years old",
                                            "34+",
-                                           "27 years old ",
-                                           "30 Years"),
+                                           "27 years old",
+                                           "30 Years"
+                                          ),
                                          c("31","26","29","22","20","23","34","27","30"),
                                           raw_data$Age)
 #raw_data$Age<-str_replace_all((raw_data$Age), regex_pattern)
@@ -193,9 +208,9 @@ na_count <-sapply(raw_data, function(y) sum(length(which(is.na(y)))))
 #Age group creation
 AgeGroup <- cut(raw_data$Age, 
                 right=FALSE, 
-                breaks = c(0,1,(1:9)*10,1000),
-                labels = c("0","1-9",
-                           paste((1:8)*10,"-",(1:8 + 1)*10 -1),"90+"))
+                breaks = c(0,1,(1:5)*10,1000),
+                labels = c("0","1-5",
+                           paste((1:4)*10,"-",(1:4 + 1)*10 -1),"50+"))
 
 
 raw_data<-mutate(raw_data,AgeGroup=AgeGroup)
@@ -208,7 +223,7 @@ head(raw_data)
 ```{r write file}
 #View(raw_data)
 #Write file
-write.csv(raw_data,"Relationship_bloodGrp_cleaned.csv", row.names = FALSE)
+write.csv(raw_data,"../data/Relationship_bloodGrp_cleaned.csv", row.names = FALSE)
 
 ```
 
