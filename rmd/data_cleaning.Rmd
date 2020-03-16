@@ -71,7 +71,7 @@ raw_data<- raw_data%>% filter(raw_data$Reside != "\U0001f1fa\U0001f1f8" & raw_da
      Wrong_spell = c("Ivory Coast", 
                      "Côte D'ivoire", 
                      "Ivoiry Coast", 
-                     "Côte D' Ivoire",    
+                     "Côte D'Ivoire",    
                      "Côté D'ivoire",
                      "Cote D'ivoire", 
                      "Cote D Ivoire", 
@@ -85,6 +85,9 @@ raw_data<- raw_data%>% filter(raw_data$Reside != "\U0001f1fa\U0001f1f8" & raw_da
                      "Côte D'ivoire",
                      "Côté D Ivoire",
                      "Côte Divoire",
+                     'Cote D'ivoire',
+                     "Côte D'ivoire",
+                     "Côté D'ivoire",
                      "Dr Congo",
                      "United States",
                      "Sénégal",
@@ -115,7 +118,9 @@ raw_data<- raw_data%>% filter(raw_data$Reside != "\U0001f1fa\U0001f1f8" & raw_da
                      "Dallas",
                      "England",
                      "Lagos",
-                     "Yes"
+                     "Yes",
+                     "Guinea Conakry",
+                      "Hong Kong"
                     ),
      Correct_spell = c("Ivory Coast", 
                        "Ivory Coast", 
@@ -129,6 +134,9 @@ raw_data<- raw_data%>% filter(raw_data$Reside != "\U0001f1fa\U0001f1f8" & raw_da
                        "USA",
                        "Ivory Coast",
                        "Congo",
+                       "Ivory Coast",
+                       "Ivory Coast",
+                       "Ivory Coast",
                        "Ivory Coast",
                        "Ivory Coast",
                        "Ivory Coast",
@@ -164,7 +172,9 @@ raw_data<- raw_data%>% filter(raw_data$Reside != "\U0001f1fa\U0001f1f8" & raw_da
                        "USA",
                        "UK",
                        "Nigeria",
-                       "Ivory Coast"
+                       "Ivory Coast",
+                       "Guinea",
+"China"
                        )
 ))
 
@@ -223,7 +233,7 @@ head(raw_data)
 ```{r write file}
 #View(raw_data)
 #Write file
-write.csv(raw_data,"../data/Relationship_bloodGrp_cleaned.csv", row.names = FALSE)
+write_csv(raw_data,"../data/Relationship_bloodGrp_cleaned.csv")
 
 ```
 
