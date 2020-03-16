@@ -17,22 +17,166 @@ suppressPackageStartupMessages(library(splusTimeDate))
 suppressPackageStartupMessages(library(RQuantLib))
 suppressPackageStartupMessages(library(kableExtra))
 library(plotly)
+library(igraph) 
+library(network) 
+library(sna)
+#library(ggraph)
+#library(visNetwork)
+#library(threejs)
+#library(networkD3)
+#library(ndtv)
+#library(GGally)
+#library(MASS)
+#library(cdparcoord)
+library(tmap)
+library(tmaptools)
+library(leaflet)
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(conflicted)
 ```
 
 ```{r}
-data <- read.csv("data/Relationship_bloodGrp_cleaned.csv")
+data <- read_csv("data/Relationship_bloodGrp_cleaned.csv") 
 
-#data %>% filter(Reside == 'Yes')
+data$Reside[data$Reside == 'Hong Kong'] <- 'China'
+
+#data %>% select(Reside) %>% arrange(Reside) %>% group_by(Reside) %>% summarize(count = n())
 ```
 
-## About the participants 
+## I- About participants 
 
-### 402 participants from 41 countries residing in 33 countries
-### 3 main countries of origin: 30% CIV, 19% Nigeria, 18% India, 5% Nigeria
-### 3 main countries of residence: 24% USA, 20% Canada, 11% Cote d'Ivoire 
+- 407 participants from 41 countries residing in 30 countries
+- 3 main countries of origin: 29% Ivory Coast, 19% Nigeria, 18% India, 5% Canada
+- 3 main countries of residence: 24% USA, 20% Canada, 12% Nigeria
+
+<br></br>
+
+- Below is an interactive map of participants' countries of origin and residence:
+
 
 ```{r}
-# create network of countries of origin and countries of residence
+#load a R dataset of countries with their lat and long 
+# select disntinct country
+
+world_data <- data.frame(map_data("world"))
+
+# rename some countries
+world_data$region[world_data$region == 'Republic of Congo'] <- 'Congo'
+world_data$region[world_data$region =='Czech Republic'] <- 'Czech'
+world_data$region[world_data$region =='United Arab Emirates'] <- 'UAE'
+
+
+world_data <- world_data %>% 
+select(region, lat, long) %>% 
+arrange(region) %>% 
+group_by(region) %>% 
+mutate(group = row_number()) %>% 
+dplyr::filter(group == 1) %>% 
+select(-group) %>% 
+ungroup()
+
+# combine country of origin and country of residence into 1 column
+
+countries_origin <- data %>% 
+  select(Origin) %>% 
+  rename(country= Origin) %>% 
+  unique()
+
+countries_residence <- data %>% 
+  select(Reside) %>% 
+  rename(country = Reside) %>% 
+  unique()
+
+countries <- rbind(countries_origin, countries_residence) %>% 
+  unique()
+
+# count of countries of origin and residence
+
+origin <- data %>% 
+  select(Origin) %>%
+  rename(country = Origin) %>% 
+  arrange(country) %>% 
+  group_by(country) %>% 
+  summarize(count_origin = n()) %>% 
+  ungroup()
+
+reside <- data %>% 
+  select(country = Reside) %>% 
+  arrange(country) %>% 
+  group_by(country) %>% 
+  summarize(count_residence = n()) %>% 
+  ungroup()
+
+#join countries and counts above
+
+countries2 <- countries %>% 
+  left_join(origin) %>% 
+  left_join(reside) %>% 
+  mutate(count_origin = replace_na(count_origin,0)) %>% 
+  mutate(count_residence = replace_na(count_residence,0)) %>% 
+ left_join(world_data, 
+                   by = c('country' = 'region')) %>% 
+  rename(lon = long) %>% 
+  drop_na() 
+
+#countries2 %>% dplyr::filter(is.null(lat))
+
+```
+
+
+- **Interactivity**: click on circles or icons to display country name, count of participants from and residing in the country 
+
+- **Circle Color and Size**: driven by count of participants from a given country :
+
+    - less than 10 : <span style="color: green;">green</span>
+    - 10 - 30 : <span style="color: yellow;">yellow</span>
+    - 30 - 50: <span style="color: orange;">orange</span>
+    - greater than 50 : <span style="color: red;">red</span>
+    
+<br></br>
+```{r}
+# map
+
+trucks = makeAwesomeIcon(
+  icon = 'fas fa-truck fa-3x',
+  iconColor = 'black',
+  library = 'fa'
+)
+
+country_map = leaflet(data = countries2,
+                           (width = "100%")) %>%
+  addProviderTiles(providers$Stamen.Toner, options = providerTileOptions(opacity = 0.45)) %>%
+  addAwesomeMarkers(icon = trucks,
+                    lat = countries2$lat,
+                    lng = countries2$lon,
+                    popup = paste0("Country: ", countries2$country, "<br>",
+                                   "Origin: ",countries2$count_origin , "<br>",
+                                   "Reside: ",countries2$count_residence, "<br>"),
+
+                    clusterOptions = markerClusterOptions(maxClusterRadius = 50)) %>%
+  addCircleMarkers(radius= countries2$count_origin/10,
+                   
+                   color=~case_when(countries2$count_origin < 10 ~ "green",
+                                    (countries2$count_origin >= 10 & countries2$count_origin < 30) ~ "yellow",
+                                   (countries2$count_origin >= 30 & countries2$count_origin < 50) ~ "orange",
+                                    countries2$count_origin>= 50 ~ "red"),
+                   lat = countries2$lat,
+                   lng = countries2$lon,
+                   fillOpacity = 0.5,
+                   popup = paste0("Country: ", countries2$country, "<br>",
+                                   "Origin: ",countries2$count_origin , "<br>",
+                                   "Reside: ",countries2$count_residence, "<br>"
+                                  )
+                   )
+  
+
+country_map
+```
+
+<br></br>
+```{r}
 origin <- data %>% 
   select(Origin) %>% 
   arrange(Origin) %>% 
@@ -54,7 +198,9 @@ reside <- data %>%
 ```
 
 ### Distribution of Participants' blood types vs. Distribution in main countries
-### Source: https://en.wikipedia.org/wiki/Blood_type_distribution_by_country
+[Source](https://en.wikipedia.org/wiki/Blood_type_distribution_by_country)
+
+<br></br>
 
 ```{r}
 bt <- data %>% 
@@ -74,35 +220,40 @@ bt <- data %>%
          'Ghana' = c(1.3,17.6,0.2,2.8,1.3,18.3,4.5,53.8),
          'USA' = c(6.3,35.7,0.6,3.4,1.5,8.5,6.6,37.4))
 
-colnames(bt) <- c('Blood Type','Participants (%)', 'Ivory Coast (%)', 'Nigeria (%)', 'India (%)', 'Canada (%)', 'Kenya (%)', 'Ghana (%)', 'USA (%)')
+colnames(bt) <- c('Blood Group','Participants (%)', 'Ivory Coast (%)', 'Nigeria (%)', 'India (%)', 'Canada (%)', 'Kenya (%)', 'Ghana (%)', 'USA (%)')
 
 bt <- bt  %>% 
   mutate_if(is.numeric, ~round(., 1))
+
+DT ::datatable(bt, style = "bootstrap", class = "table-hover", rownames = FALSE)
 ```
 
-- The distribution of blood types in our sample is well aligned with that of the selected countries. The major groups are:
+- The distribution of blood types in our sample is well aligned with that of the most represented countries. The major groups are:
 
     - 41% O+
     - 21% A+
     - 20% B+ 
 
+<br></br>
 
-### Genger, Relationship Status, Age
+### Gender, Relationship Status, Age
 
-```{r}
+<br></br>
+
+```{r, out.width= '100%', out.height= '100%'}
 df <- data
 
-levels(df$Gender)[levels(df$Gender)=="Prefer not to say"] <- "Undisclosed"
+df$Gender[df$Gender == "Prefer not to say"] <- "Undisclosed"
 
 
 df <- df %>%
      select(Gender, InRel, AgeGroup)  %>% 
-    drop_na()  %>% 
-    gather(variable,value) %>%
-    group_by(variable, value) %>% 
+     drop_na()  %>% 
+     gather(variable,value) %>%
+     group_by(variable, value) %>% 
     summarize(count = n()) %>% 
-   mutate (percent = count/ sum(count)) %>% 
-  mutate(percent = round(percent ,2)*100)
+    mutate (percent = count/ sum(count)) %>% 
+    mutate(percent = round(percent ,2)*100)
 
 
 #Plots
@@ -123,48 +274,275 @@ plot <- ggplot(df,
             axis.text.x = element_text(angle = 50, hjust = 1))+
         xlab("")+
         ylab("Percent")
+plot
 
-ggplotly(plot)
+#ggplotly(plot)
 ```
+
+<br></br>
 
 - 64% of participants are between 20 and 29 years old. The second biggest age group is 30 to 39 (27%) followed by 40 to 49 (5%)
 - 54% of participants are Female , 46% Male
 - 64% of participants are in a relationship
 
 
+<br></br>
 
+###  Relationship between the blood group of participants and their partners'
+
+<br></br>
 ```{r}
-# Gender <- data %>% 
-#   select(Gender) %>% 
-#   arrange(Gender) %>% 
-#   group_by(Gender) %>% 
-#   summarize(count = n()) %>% 
-#   mutate (percent = count/ sum(count)) %>% 
-#   mutate(percent = round(percent ,2)*100)
-# 
-# relationship <- data %>% 
-#   select(InRel) %>% 
-#   arrange(InRel) %>% 
-#   group_by(InRel) %>% 
-#   summarize(count = n()) %>% 
-#   mutate (percent = count/ sum(count)) %>% 
-#   mutate(percent = round(percent ,2)*100)
-# 
-# ageGroup <- data %>% 
-#   select(AgeGroup) %>% 
-#   arrange(AgeGroup) %>% 
-#   group_by(AgeGroup) %>% 
-#   summarize(count = n()) %>% 
-#   mutate (percent = count/ sum(count)) %>% 
-#   mutate(percent = round(percent,2)) %>% 
-#   arrange(desc(percent)*100)
+heat_data <- data %>% 
+  select(BldGrp, BldGrp_Prtnr) %>% 
+  arrange(BldGrp, BldGrp_Prtnr) %>% 
+  group_by(BldGrp, BldGrp_Prtnr) %>% 
+  summarize(count = n()) %>% 
+  mutate (percent = count/ sum(count)) %>% 
+  mutate(percent = round(percent ,2)*100)
+
+heat_data2 <- heat_data
+
+colnames(heat_data2) <- c("Participants' Blood Type","Their Partners' Blood Type", 'Count', 'Percent')
+
+DT ::datatable(heat_data2, style = "bootstrap", class = "table-hover", rownames = FALSE)
+```
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+
+ggplot(data = heat_data, 
+       mapping = aes(x = BldGrp,
+                     y =  BldGrp_Prtnr,
+                     fill = percent)) +
+  geom_tile()+
+  theme_bw()+
+   theme(panel.grid.major=element_blank(), 
+            panel.grid.minor=element_blank(),
+            strip.text.x=element_text(size=11))+
+  labs(x= "Participants' Blood Group",
+       y = "Blood Group of Participants' partners")+
+   scale_fill_gradient(name = "Percent",
+                      low = "lightskyblue",
+                      high = "navy")
+
+#Although 42 partcipants who indicated being single answered *I don't know* to 'what is the blood group of your partner ?'
+
 ```
 
-## Network of blood group vs. partner's blood group
 
+<br></br>
+
+- This plot is called a heatmap. It is a chart that uses colors to represent values the way a bar plot uses height and width
+
+<br></br>
+
+- The chart shows the different combinations of participants' blood type and their partners'. The color spectrum varies from light sky blue (low percentage) to navy blue (high percentage)
+
+<br></br>
+
+- Most participants who indicated being in a relationship do not know the blood group of their partners as shown by the darker colors in the "I don't know" row
+
+<br></br>
+
+- A+ , B+ and O+ participants stand out. Those who are in a relationship and know their partners' blood type are more likely to date someone with the same blood group
+
+    - A+: 18% A+, 12% O+
+
+    - B+: 20% B+, 13% O+ 
+
+    - O+: 15% O+, 8% B+
+    
+<br></br>
+
+## II- Relationship between Blood Group and Personality 
+
+### Excluding Rh factor: +/-
+
+<br></br>
 ```{r}
-#Network of blood group vs. partner's blood group
+data2 <- data %>% 
+  mutate(Blood_group = case_when(BldGrp == 'O-' ~ 'O',
+                                 BldGrp == 'O+' ~ 'O',
+                                 BldGrp == 'A-' ~ 'A',
+                                 BldGrp == 'A+' ~ 'A',
+                                 BldGrp == 'B+' ~ 'B',
+                                 BldGrp == 'B-' ~ 'B',
+                                 BldGrp == 'AB-' ~ 'AB',
+                                 BldGrp == 'AB+' ~ 'AB'))
+```
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function <- function(var, my_title){
+  
+  plot_data <- data2 %>% 
+    dplyr::select(Blood_group, var)
+  
+  plot_data %>% ggplot(aes(x = plot_data[[2]],
+                              label = scales::percent(prop.table(stat(count))),
+                              y = prop.table(stat(count)),
+                              group = plot_data[[1]]))+
+  geom_text(aes(label = round(..prop.., 2),
+                y = ..prop..), stat= "count", 
+            position = position_dodge(width = 0.5), 
+            vjust =-0.25, 
+            size = 2.5,
+            color = 'red')+
+  geom_bar(aes(y = ..prop..), stat = "count")+
+  ylim(0, 1)+
+  facet_wrap(~ plot_data[[1]])+
+  theme_bw()+
+  theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            axis.title = element_text(size = 10),
+            plot.title = element_text(size = 10),
+            strip.text.x = element_text(size = 10),
+            legend.title = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs( y = 'Proportion',
+        title = my_title,
+        x = '')
+  
+}
+
+
+#ggplotly(plot1)
 ```
 
 
+#### Group 1 : 
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Enyj_Grp', 'I enjoy being part of a group')
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Avoid_alone', "I avoid being alone")
+```
+
+<br></br>
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Get_Nervs_Talkng', "I get nervous talking to people I don't know")
+```
+
+<br></br>
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Enjy_attentn', "I enjoy being the center of attention")
+
+```
+
+<br></br>
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Fun_Party_Aftr_Wrk', "After an exhausting week a fun party is just what I need")
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Hard_Trust_Ppl', "I find it hard to trust people")
+```
+
+<br></br>
+
+#### Group 2 :
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Take_Chrg', 'I take charge')
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('help_Ppl', 'I like helping people')
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Like_Ordr', "I like order")
+```
+<br></br>
+
+#### Group 3:
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Adventure', "I seek adventure")
+```
+
+<br></br>
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Variety_Routine', "I prefer variety to routine")
+
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Focus_on_present', "I tend to focus on present realities rather than future possibilities")
+```
+
+<br></br>
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Go_With_Flow', "I would rather go with the flow than have a set schedule")
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Detail_Orntd', "I am more of a detailed-oriented than a big picture person")
+
+```
+
+<br></br>
+
+#### Group 4:
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Feel_Emo', "I feel others' emotions")
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Talk_abt_Own_Feelngs', "I often talk about my own feelings and emotions")
+```
+
+<br</br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Chs_Wrds_Care', 'I choose my words with care')
+```
+
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Modest_Achieve', "I am modest about what I have achieved")
+```
+
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Get_Upset', "I get upset easily")
+```
+
+<br></br>
+
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Avoid_Arguing', "I avoid arguing even when I disagree")
+```
+<br></br>
+```{r,out.width= '100%', out.height= '100%'}
+plot_function('Rarely_Insecure', "I rarely feel insecure")
+```
+
+
+
+<br><br>
+
+- NEXT STEPS:
+
+    - Name groups 
+    - Interpret plots ... At a quick glance, AB people seem to stand out in many aspects
+    - Find a way to make document shorter. Maybe make each group name clickable and plots are reveal upon clicling on links
+    - Contibue analysis with psychometric traits that stand out: add Rh Factor 
+    - Impact of age 
+    - Impact of countries of residence vs. origin (focus on 3 main countries) 
 
